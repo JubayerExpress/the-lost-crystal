@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Lost Crystal</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#101b22;color:#f4f6e8;font-family:system-ui,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:15px}main{width:min(100%,720px);text-align:center}h1{margin:8px 0;color:#ffe29a}p{margin:8px}canvas{width:100%;max-width:640px;aspect-ratio:4/3;background:#285e42;border:5px solid #caa66b;border-radius:12px;image-rendering:pixelated;display:block;margin:12px auto;touch-action:none}.hud{display:flex;justify-content:space-around;font-weight:bold;gap:8px}.controls{display:grid;grid-template-columns:repeat(3,64px);gap:5px;justify-content:center;margin:10px auto}.controls button{height:48px;border:0;border-radius:9px;background:#426e81;color:white;font-size:24px;font-weight:bold;touch-action:none;cursor:pointer}.controls button:active{background:#70a8b8}#restart{background:#e5b75c;border:0;border-radius:9px;padding:10px 20px;font-weight:bold;cursor:pointer}small{color:#cbd6d3}
+</style>
+</head>
+<body><main><h1>💎 The Lost Crystal <span style="font-size:.45em;vertical-align:middle;color:#b8e9c8">Animated Edition</span></h1><p>Collect all 5 crystals, then reach the golden portal. Avoid the monsters!</p><div class="hud"><span id="health">❤️ 3</span><span id="score">💎 0 / 5</span><span id="status">Explore the forest</span></div><canvas id="game" width="640" height="480" aria-label="Adventure game"></canvas><button id="restart">Restart adventure</button><div class="controls"><span></span><button data-dir="up">▲</button><span></span><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><small>Move with arrow keys, WASD, or the buttons. Press R to restart.</small></main>
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const W=640,H=480,keys=new Set();let hero,crystals,monsters,trees,portal,finished,last=0,invincible=0,clock=0,steps=0,facing='down';
+function reset(){hero={x:50,y:240,r:13,hp:3};crystals=[[105,90],[320,65],[550,125],[200,370],[480,390]].map(([x,y])=>({x,y,got:false}));monsters=[{x:300,y:200,vx:85,vy:0},{x:450,y:315,vx:0,vy:75},{x:150,y:285,vx:65,vy:0}];trees=[[180,90],[250,135],[410,80],[525,240],[350,360],[95,380],[270,280]].map(([x,y])=>({x,y,r:22}));portal={x:590,y:420};finished='';invincible=0;clock=0;steps=0;facing='down';keys.clear();updateHUD()}
+function updateHUD(){document.getElementById('health').textContent='❤️ '+hero.hp;document.getElementById('score').textContent='💎 '+crystals.filter(c=>c.got).length+' / 5';document.getElementById('status').textContent=finished||(crystals.every(c=>c.got)?'Portal unlocked!':'Explore the forest')}
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function update(dt){clock+=dt;if(finished)return;invincible=Math.max(0,invincible-dt);let dx=Number(keys.has('right'))-Number(keys.has('left')),dy=Number(keys.has('down'))-Number(keys.has('up'));if(dx||dy){steps+=dt*11;facing=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up')}let len=Math.hypot(dx,dy)||1;let nx=Math.max(hero.r,Math.min(W-hero.r,hero.x+dx/len*170*dt)),ny=Math.max(hero.r,Math.min(H-hero.r,hero.y+dy/len*170*dt));if(!trees.some(t=>Math.hypot(nx-t.x,hero.y-t.y)<hero.r+t.r-5))hero.x=nx;if(!trees.some(t=>Math.hypot(hero.x-t.x,ny-t.y)<hero.r+t.r-5))hero.y=ny;
+for(const c of crystals)if(!c.got&&dist(hero,c)<25)c.got=true;
+for(const m of monsters){m.x+=m.vx*dt;m.y+=m.vy*dt;if(m.x<45||m.x>W-45)m.vx*=-1;if(m.y<45||m.y>H-45)m.vy*=-1;if(invincible===0&&dist(hero,m)<27){hero.hp--;invincible=1.2;if(hero.hp<=0)finished='Game over! Try again.'}}
+if(crystals.every(c=>c.got)&&dist(hero,portal)<34)finished='You win! The crystal is saved!';updateHUD()}
+// Drawing helpers: all artwork is drawn by the browser, with no image downloads.
+function circle(x,y,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function ellipse(x,y,rx,ry,color){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()}
+function line(x1,y1,x2,y2,color,width=2){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+function diamond(x,y,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r*.8,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r*.8,y);ctx.closePath();ctx.fill()}
+function drawTree(t,i){
+  ellipse(t.x,t.y+17,27,11,'#143e31aa');
+  ctx.fillStyle='#75503a';ctx.fillRect(t.x-7,t.y-7,14,29);
+  ctx.fillStyle='#a7794d';ctx.fillRect(t.x-4,t.y-6,4,25);
+  let sway=Math.sin(clock*1.7+i)*2;
+  circle(t.x+sway,t.y-15,24,'#16583b');circle(t.x-13+sway,t.y-12,17,'#24784a');
+  circle(t.x+12+sway,t.y-14,18,'#288a54');circle(t.x+sway,t.y-28,18,'#35a365');
+  circle(t.x-8+sway,t.y-31,7,'#58bf76');circle(t.x+11+sway,t.y-22,5,'#49ae6a');
+}
+function drawHero(){
+  let moving=keys.has('up')||keys.has('down')||keys.has('left')||keys.has('right');
+  let walk=moving?Math.sin(steps)*5:0;
+  let bob=moving?Math.abs(Math.sin(steps))*2:Math.sin(clock*3)*.7;
+  let x=hero.x,y=hero.y-bob;
+  ellipse(x,hero.y+16,16,6,'#102c2b88');
+  // Boots and swinging arms
+  line(x-6,y+7,x-6+walk,y+18,'#332d48',7);
+  line(x+6,y+7,x+6-walk,y+18,'#332d48',7);
+  line(x-12,y-2,x-15-walk*.5,y+9,'#e9ad80',6);
+  line(x+12,y-2,x+15+walk*.5,y+9,'#e9ad80',6);
+  ctx.fillStyle='#3557a8';ctx.fillRect(x-11,y-8,22,21);
+  ctx.fillStyle='#f0bf68';ctx.fillRect(x-11,y+6,22,4);
+  ctx.fillStyle='#d4e7fa';ctx.fillRect(x-3,y-6,6,9);
+  circle(x,y-16,12,'#f2c394');
+  ctx.fillStyle='#52362f';ctx.fillRect(x-12,y-28,24,8);
+  circle(x-10,y-23,5,'#52362f');circle(x+10,y-23,5,'#52362f');
+  if(facing==='up'){ctx.fillStyle='#4e342e';ctx.fillRect(x-10,y-25,20,10)}
+  else if(facing==='left'||facing==='right'){
+    let side=facing==='left'?-1:1;
+    circle(x+side*5,y-17,2,'#2b292e');circle(x+side*12,y-13,3,'#e8b489');
+  }else{circle(x-4,y-17,1.8,'#292d3c');circle(x+4,y-17,1.8,'#292d3c');line(x-2,y-11,x+2,y-11,'#9b5b50',1)}
+  // Gold hat emblem
+  diamond(x,y-26,3,'#ffdc70');
+}
+function drawMonster(m,i){
+  let bounce=Math.sin(clock*5+i*2)*4;
+  let x=m.x,y=m.y+bounce;
+  ellipse(x,m.y+15,17,6,'#102c2b77');
+  ellipse(x,y+2,16,15,'#9c356d');
+  ellipse(x,y-4,13,11,'#db5c91');
+  circle(x-6,y-4,5,'#fff3dc');circle(x+6,y-4,5,'#fff3dc');
+  let glance=Math.sin(clock*2+i)*2;
+  circle(x-6+glance,y-3,2.4,'#22233b');circle(x+6+glance,y-3,2.4,'#22233b');
+  line(x-4,y+7,x+4,y+7,'#6c204e',2);
+  circle(x-11,y-11,4,'#e87eab');circle(x+11,y-11,4,'#e87eab');
+}
+function draw(){
+  // Ground: a patterned meadow and a winding stepping-stone path.
+  ctx.fillStyle='#276e4b';ctx.fillRect(0,0,W,H);
+  for(let gy=0;gy<12;gy++)for(let gx=0;gx<16;gx++){
+    let x=gx*40,y=gy*40;
+    ctx.fillStyle=(gx+gy)%2?'#2d7750':'#307b53';ctx.fillRect(x,y,40,40);
+    let seed=(gx*31+gy*67)%23;
+    line(x+seed+5,y+15,x+seed+2,y+10,'#4b9860',1.5);
+    line(x+seed+5,y+15,x+seed+9,y+9,'#4b9860',1.5);
+    if((gx*7+gy*11)%9===0){circle(x+28,y+28,3,'#ffe59b');circle(x+28,y+28,1.3,'#fff')}
+    if((gx*3+gy*5)%11===0){circle(x+10,y+31,2.5,'#d6a5ed')}
+  }
+  for(let i=0;i<13;i++){
+    let x=28+i*47,y=244+Math.sin(i*.75)*24;
+    ellipse(x,y,17,8,'#9b9c78');ellipse(x,y-2,15,6,'#c0bd91');
+  }
+  // Portal animates and changes color after collecting every gem.
+  let open=crystals.every(c=>c.got),pulse=Math.sin(clock*3)*4;
+  ellipse(portal.x,portal.y+25,33,10,'#153b30aa');
+  circle(portal.x,portal.y,30+pulse,open?'#e6b34855':'#718d8655');
+  circle(portal.x,portal.y,25,open?'#ffcc56':'#82928a');
+  circle(portal.x,portal.y,18,open?'#fff3aa':'#354c58');
+  circle(portal.x,portal.y,11,open?'#8fe8ff':'#283e48');
+  for(let i=0;i<6;i++){let a=clock*(open?1.8:.5)+i*Math.PI/3;circle(portal.x+Math.cos(a)*32,portal.y+Math.sin(a)*32,open?3:1.5,open?'#fff3b5':'#a8b9b4')}
+  // Gems float, shine, and emit small orbiting sparks.
+  for(let i=0;i<crystals.length;i++){
+    let c=crystals[i];if(c.got)continue;
+    let y=c.y+Math.sin(clock*3+i)*5;
+    ellipse(c.x,c.y+17,12,4,'#0c4e5377');
+    circle(c.x,y,18,'#74edff33');diamond(c.x,y,14,'#61d7ff');
+    diamond(c.x-3,y-3,6,'#d5fcff');
+    for(let j=0;j<3;j++){let a=clock*2+j*Math.PI*2/3+i;circle(c.x+Math.cos(a)*20,y+Math.sin(a)*17,2,'#d7ffff')}
+  }
+  trees.forEach(drawTree);
+  monsters.forEach(drawMonster);
+  if(invincible===0||Math.floor(invincible*10)%2===0)drawHero();
+  // Small in-world quest indicator.
+  ctx.fillStyle='#102f2bc9';ctx.fillRect(12,12,168,30);
+  ctx.font='bold 14px system-ui';ctx.textAlign='left';ctx.fillStyle='#fff0bc';
+  ctx.fillText(crystals.every(c=>c.got)?'✨ Portal unlocked!':'✦ Find the 5 crystals',23,32);
+  if(finished){
+    ctx.fillStyle='#071b29d9';ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center';ctx.fillStyle='#ffe6a2';ctx.font='bold 35px system-ui';
+    ctx.fillText(finished.startsWith('You')?'🏆 Victory!':'💔 Game Over',W/2,H/2-12);
+    ctx.font='18px system-ui';ctx.fillStyle='#f2f7ed';ctx.fillText('Press Restart or R to play again',W/2,H/2+28);
+  }
+}
+function frame(time){let dt=Math.min((time-last)/1000||0,.04);last=time;update(dt);draw();requestAnimationFrame(frame)}
+const mapping={arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};
+window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(mapping[k]){keys.add(mapping[k]);e.preventDefault()}if(k==='r')reset()});window.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(mapping[k])keys.delete(mapping[k])});window.addEventListener('blur',()=>keys.clear());
+for(const b of document.querySelectorAll('[data-dir]')){const d=b.dataset.dir;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(d)});for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>keys.delete(d))}
+document.getElementById('restart').addEventListener('click',reset);reset();requestAnimationFrame(frame);
+</script></body></html>
