@@ -1,27 +1,30 @@
-# The Lost Crystal: NEON WILDS 💎
+# The Lost Crystal: NEON WILDS
 
-A fast-paced, neon-styled browser adventure built with plain HTML, CSS and JavaScript. No dependencies or build tools.
+Playable HTML5 canvas action-adventure. No installation, build command, external dependencies, or API keys.
 
-## Play
+## Play locally
+Open `index.html` in Chrome, Firefox, Edge, or Safari. Press **Start Adventure**.
 
-Open `index.html` in your browser. Collect all seven crystals, fight the Shadow Guardian, and reach the portal.
+## Controls
+- Move: Arrow keys / WASD, or touch direction buttons
+- Sword: Space / J or touch Slash
+- Dash: Shift / K or touch Dash
+- Pause: P. Restart button resets the game.
 
-- Move: WASD or arrow keys (on-screen directional controls on touch devices)
-- Attack: Space / J (or the slash button)
-- Dash: Shift / K (or the dash button)
-- Pause: P
-- Restart: Restart button
-- Sound: Optional sound toggle (off by default)
+## Upload to GitHub
+1. Create a new GitHub repository.
+2. Extract the ZIP. Upload `index.html`, `netlify.toml`, `README.md`, and `.gitignore` **directly into the repository root** (not inside another folder).
+3. Commit files to the main branch.
 
-## Deploy on Netlify using GitHub
+## Deploy on Netlify via GitHub
+1. In Netlify, select Add new project > Import an existing project > GitHub.
+2. Select the repository. Set base directory blank, build command blank, publish directory `.`.
+3. Deploy. After GitHub updates Netlify auto-redeploys.
 
-1. Create a GitHub repository and upload **the files inside this folder** to the repository root.
-2. In Netlify, select **Add new project → Import an existing project** and connect GitHub.
-3. Choose the repository, leave **Build command** blank, set **Publish directory** to `.` and deploy.
-4. Future commits to your connected branch automatically redeploy.
+## Alternative: manual Netlify deploy
+Extract ZIP and drag the extracted folder that contains `index.html` into Netlify's manual deploy area. Do not upload the ZIP as a subfolder of an existing project.
 
-You can also drag this folder into Netlify's manual deployment interface.
-
-## Edit
-
-Everything lives in `index.html`. Edit CSS in `<style>` to change appearance and JavaScript in `<script>` to change gameplay. The game uses Canvas 2D, Web Audio (only when enabled), and no external assets.
+## Troubleshooting
+- **404 / Page not found**: `index.html` must be at the publish directory root.
+- **Old version**: wait for the successful deploy and hard-refresh the page.
+- **Start button**: click Start Adventure to begin; no assets or external services needed.
