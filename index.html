@@ -1,124 +1,38 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The Lost Crystal</title>
-<style>
-*{box-sizing:border-box}body{margin:0;background:#101b22;color:#f4f6e8;font-family:system-ui,Arial,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:15px}main{width:min(100%,720px);text-align:center}h1{margin:8px 0;color:#ffe29a}p{margin:8px}canvas{width:100%;max-width:640px;aspect-ratio:4/3;background:#285e42;border:5px solid #caa66b;border-radius:12px;image-rendering:pixelated;display:block;margin:12px auto;touch-action:none}.hud{display:flex;justify-content:space-around;font-weight:bold;gap:8px}.controls{display:grid;grid-template-columns:repeat(3,64px);gap:5px;justify-content:center;margin:10px auto}.controls button{height:48px;border:0;border-radius:9px;background:#426e81;color:white;font-size:24px;font-weight:bold;touch-action:none;cursor:pointer}.controls button:active{background:#70a8b8}#restart{background:#e5b75c;border:0;border-radius:9px;padding:10px 20px;font-weight:bold;cursor:pointer}small{color:#cbd6d3}
-</style>
-</head>
-<body><main><h1>💎 The Lost Crystal <span style="font-size:.45em;vertical-align:middle;color:#b8e9c8">Animated Edition</span></h1><p>Collect all 5 crystals, then reach the golden portal. Avoid the monsters!</p><div class="hud"><span id="health">❤️ 3</span><span id="score">💎 0 / 5</span><span id="status">Explore the forest</span></div><canvas id="game" width="640" height="480" aria-label="Adventure game"></canvas><button id="restart">Restart adventure</button><div class="controls"><span></span><button data-dir="up">▲</button><span></span><button data-dir="left">◀</button><button data-dir="down">▼</button><button data-dir="right">▶</button></div><small>Move with arrow keys, WASD, or the buttons. Press R to restart.</small></main>
-<script>
-const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
-const W=640,H=480,keys=new Set();let hero,crystals,monsters,trees,portal,finished,last=0,invincible=0,clock=0,steps=0,facing='down';
-function reset(){hero={x:50,y:240,r:13,hp:3};crystals=[[105,90],[320,65],[550,125],[200,370],[480,390]].map(([x,y])=>({x,y,got:false}));monsters=[{x:300,y:200,vx:85,vy:0},{x:450,y:315,vx:0,vy:75},{x:150,y:285,vx:65,vy:0}];trees=[[180,90],[250,135],[410,80],[525,240],[350,360],[95,380],[270,280]].map(([x,y])=>({x,y,r:22}));portal={x:590,y:420};finished='';invincible=0;clock=0;steps=0;facing='down';keys.clear();updateHUD()}
-function updateHUD(){document.getElementById('health').textContent='❤️ '+hero.hp;document.getElementById('score').textContent='💎 '+crystals.filter(c=>c.got).length+' / 5';document.getElementById('status').textContent=finished||(crystals.every(c=>c.got)?'Portal unlocked!':'Explore the forest')}
-function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
-function update(dt){clock+=dt;if(finished)return;invincible=Math.max(0,invincible-dt);let dx=Number(keys.has('right'))-Number(keys.has('left')),dy=Number(keys.has('down'))-Number(keys.has('up'));if(dx||dy){steps+=dt*11;facing=Math.abs(dx)>Math.abs(dy)?(dx>0?'right':'left'):(dy>0?'down':'up')}let len=Math.hypot(dx,dy)||1;let nx=Math.max(hero.r,Math.min(W-hero.r,hero.x+dx/len*170*dt)),ny=Math.max(hero.r,Math.min(H-hero.r,hero.y+dy/len*170*dt));if(!trees.some(t=>Math.hypot(nx-t.x,hero.y-t.y)<hero.r+t.r-5))hero.x=nx;if(!trees.some(t=>Math.hypot(hero.x-t.x,ny-t.y)<hero.r+t.r-5))hero.y=ny;
-for(const c of crystals)if(!c.got&&dist(hero,c)<25)c.got=true;
-for(const m of monsters){m.x+=m.vx*dt;m.y+=m.vy*dt;if(m.x<45||m.x>W-45)m.vx*=-1;if(m.y<45||m.y>H-45)m.vy*=-1;if(invincible===0&&dist(hero,m)<27){hero.hp--;invincible=1.2;if(hero.hp<=0)finished='Game over! Try again.'}}
-if(crystals.every(c=>c.got)&&dist(hero,portal)<34)finished='You win! The crystal is saved!';updateHUD()}
-// Drawing helpers: all artwork is drawn by the browser, with no image downloads.
-function circle(x,y,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
-function ellipse(x,y,rx,ry,color){ctx.fillStyle=color;ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);ctx.fill()}
-function line(x1,y1,x2,y2,color,width=2){ctx.strokeStyle=color;ctx.lineWidth=width;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
-function diamond(x,y,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.moveTo(x,y-r);ctx.lineTo(x+r*.8,y);ctx.lineTo(x,y+r);ctx.lineTo(x-r*.8,y);ctx.closePath();ctx.fill()}
-function drawTree(t,i){
-  ellipse(t.x,t.y+17,27,11,'#143e31aa');
-  ctx.fillStyle='#75503a';ctx.fillRect(t.x-7,t.y-7,14,29);
-  ctx.fillStyle='#a7794d';ctx.fillRect(t.x-4,t.y-6,4,25);
-  let sway=Math.sin(clock*1.7+i)*2;
-  circle(t.x+sway,t.y-15,24,'#16583b');circle(t.x-13+sway,t.y-12,17,'#24784a');
-  circle(t.x+12+sway,t.y-14,18,'#288a54');circle(t.x+sway,t.y-28,18,'#35a365');
-  circle(t.x-8+sway,t.y-31,7,'#58bf76');circle(t.x+11+sway,t.y-22,5,'#49ae6a');
-}
-function drawHero(){
-  let moving=keys.has('up')||keys.has('down')||keys.has('left')||keys.has('right');
-  let walk=moving?Math.sin(steps)*5:0;
-  let bob=moving?Math.abs(Math.sin(steps))*2:Math.sin(clock*3)*.7;
-  let x=hero.x,y=hero.y-bob;
-  ellipse(x,hero.y+16,16,6,'#102c2b88');
-  // Boots and swinging arms
-  line(x-6,y+7,x-6+walk,y+18,'#332d48',7);
-  line(x+6,y+7,x+6-walk,y+18,'#332d48',7);
-  line(x-12,y-2,x-15-walk*.5,y+9,'#e9ad80',6);
-  line(x+12,y-2,x+15+walk*.5,y+9,'#e9ad80',6);
-  ctx.fillStyle='#3557a8';ctx.fillRect(x-11,y-8,22,21);
-  ctx.fillStyle='#f0bf68';ctx.fillRect(x-11,y+6,22,4);
-  ctx.fillStyle='#d4e7fa';ctx.fillRect(x-3,y-6,6,9);
-  circle(x,y-16,12,'#f2c394');
-  ctx.fillStyle='#52362f';ctx.fillRect(x-12,y-28,24,8);
-  circle(x-10,y-23,5,'#52362f');circle(x+10,y-23,5,'#52362f');
-  if(facing==='up'){ctx.fillStyle='#4e342e';ctx.fillRect(x-10,y-25,20,10)}
-  else if(facing==='left'||facing==='right'){
-    let side=facing==='left'?-1:1;
-    circle(x+side*5,y-17,2,'#2b292e');circle(x+side*12,y-13,3,'#e8b489');
-  }else{circle(x-4,y-17,1.8,'#292d3c');circle(x+4,y-17,1.8,'#292d3c');line(x-2,y-11,x+2,y-11,'#9b5b50',1)}
-  // Gold hat emblem
-  diamond(x,y-26,3,'#ffdc70');
-}
-function drawMonster(m,i){
-  let bounce=Math.sin(clock*5+i*2)*4;
-  let x=m.x,y=m.y+bounce;
-  ellipse(x,m.y+15,17,6,'#102c2b77');
-  ellipse(x,y+2,16,15,'#9c356d');
-  ellipse(x,y-4,13,11,'#db5c91');
-  circle(x-6,y-4,5,'#fff3dc');circle(x+6,y-4,5,'#fff3dc');
-  let glance=Math.sin(clock*2+i)*2;
-  circle(x-6+glance,y-3,2.4,'#22233b');circle(x+6+glance,y-3,2.4,'#22233b');
-  line(x-4,y+7,x+4,y+7,'#6c204e',2);
-  circle(x-11,y-11,4,'#e87eab');circle(x+11,y-11,4,'#e87eab');
-}
-function draw(){
-  // Ground: a patterned meadow and a winding stepping-stone path.
-  ctx.fillStyle='#276e4b';ctx.fillRect(0,0,W,H);
-  for(let gy=0;gy<12;gy++)for(let gx=0;gx<16;gx++){
-    let x=gx*40,y=gy*40;
-    ctx.fillStyle=(gx+gy)%2?'#2d7750':'#307b53';ctx.fillRect(x,y,40,40);
-    let seed=(gx*31+gy*67)%23;
-    line(x+seed+5,y+15,x+seed+2,y+10,'#4b9860',1.5);
-    line(x+seed+5,y+15,x+seed+9,y+9,'#4b9860',1.5);
-    if((gx*7+gy*11)%9===0){circle(x+28,y+28,3,'#ffe59b');circle(x+28,y+28,1.3,'#fff')}
-    if((gx*3+gy*5)%11===0){circle(x+10,y+31,2.5,'#d6a5ed')}
-  }
-  for(let i=0;i<13;i++){
-    let x=28+i*47,y=244+Math.sin(i*.75)*24;
-    ellipse(x,y,17,8,'#9b9c78');ellipse(x,y-2,15,6,'#c0bd91');
-  }
-  // Portal animates and changes color after collecting every gem.
-  let open=crystals.every(c=>c.got),pulse=Math.sin(clock*3)*4;
-  ellipse(portal.x,portal.y+25,33,10,'#153b30aa');
-  circle(portal.x,portal.y,30+pulse,open?'#e6b34855':'#718d8655');
-  circle(portal.x,portal.y,25,open?'#ffcc56':'#82928a');
-  circle(portal.x,portal.y,18,open?'#fff3aa':'#354c58');
-  circle(portal.x,portal.y,11,open?'#8fe8ff':'#283e48');
-  for(let i=0;i<6;i++){let a=clock*(open?1.8:.5)+i*Math.PI/3;circle(portal.x+Math.cos(a)*32,portal.y+Math.sin(a)*32,open?3:1.5,open?'#fff3b5':'#a8b9b4')}
-  // Gems float, shine, and emit small orbiting sparks.
-  for(let i=0;i<crystals.length;i++){
-    let c=crystals[i];if(c.got)continue;
-    let y=c.y+Math.sin(clock*3+i)*5;
-    ellipse(c.x,c.y+17,12,4,'#0c4e5377');
-    circle(c.x,y,18,'#74edff33');diamond(c.x,y,14,'#61d7ff');
-    diamond(c.x-3,y-3,6,'#d5fcff');
-    for(let j=0;j<3;j++){let a=clock*2+j*Math.PI*2/3+i;circle(c.x+Math.cos(a)*20,y+Math.sin(a)*17,2,'#d7ffff')}
-  }
-  trees.forEach(drawTree);
-  monsters.forEach(drawMonster);
-  if(invincible===0||Math.floor(invincible*10)%2===0)drawHero();
-  // Small in-world quest indicator.
-  ctx.fillStyle='#102f2bc9';ctx.fillRect(12,12,168,30);
-  ctx.font='bold 14px system-ui';ctx.textAlign='left';ctx.fillStyle='#fff0bc';
-  ctx.fillText(crystals.every(c=>c.got)?'✨ Portal unlocked!':'✦ Find the 5 crystals',23,32);
-  if(finished){
-    ctx.fillStyle='#071b29d9';ctx.fillRect(0,0,W,H);
-    ctx.textAlign='center';ctx.fillStyle='#ffe6a2';ctx.font='bold 35px system-ui';
-    ctx.fillText(finished.startsWith('You')?'🏆 Victory!':'💔 Game Over',W/2,H/2-12);
-    ctx.font='18px system-ui';ctx.fillStyle='#f2f7ed';ctx.fillText('Press Restart or R to play again',W/2,H/2+28);
-  }
-}
-function frame(time){let dt=Math.min((time-last)/1000||0,.04);last=time;update(dt);draw();requestAnimationFrame(frame)}
-const mapping={arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right'};
-window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(mapping[k]){keys.add(mapping[k]);e.preventDefault()}if(k==='r')reset()});window.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(mapping[k])keys.delete(mapping[k])});window.addEventListener('blur',()=>keys.clear());
-for(const b of document.querySelectorAll('[data-dir]')){const d=b.dataset.dir;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(d)});for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>keys.delete(d))}
-document.getElementById('restart').addEventListener('click',reset);reset();requestAnimationFrame(frame);
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080d1d"><title>The Lost Crystal: NEON WILDS</title><style>
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0%,#1c2453,#080b18 70%);color:#edf4ff;font-family:system-ui,Segoe UI,sans-serif;min-height:100vh;padding:16px}.shell{max-width:1050px;margin:auto}header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}h1{margin:0;font-size:clamp(23px,4vw,38px);letter-spacing:2px;text-shadow:0 0 24px #39eaff}h1 span{color:#64e9ff}.subtitle{color:#aab9e2;margin:4px 0 12px}.hud{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}.chip{background:#141d3a;border:1px solid #344875;border-radius:10px;padding:8px 13px;font-weight:700;box-shadow:inset 0 0 16px #20315b}.stage{position:relative;border:2px solid #4c74b5;border-radius:16px;overflow:hidden;box-shadow:0 0 40px #142c70,0 0 0 4px #090e22}canvas{display:block;width:100%;aspect-ratio:16/9;touch-action:none;background:#0a1930}.overlay{position:absolute;inset:0;background:#070c22d9;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;backdrop-filter:blur(4px)}.overlay.hidden{display:none}.panel{max-width:510px}.panel h2{font-size:clamp(30px,6vw,58px);line-height:1.05;margin:8px 0;color:#79f5ff;text-shadow:0 0 25px #00bfff}.panel p{color:#d0d9f7;line-height:1.55}.tag{color:#ffdb76;letter-spacing:3px;font-weight:800}.btn{border:1px solid #68eaff;background:linear-gradient(130deg,#1675ab,#5134aa);color:white;padding:11px 19px;border-radius:11px;font-weight:800;cursor:pointer;box-shadow:0 0 18px #256cc688}.btn:hover{filter:brightness(1.2)}.btn:active,.touch button:active{transform:scale(.95)}.bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}.hint{color:#aab9d9;font-size:13px}.touch{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:14px auto;max-width:600px}.dpad{display:grid;grid-template-columns:repeat(3,56px);gap:5px}.touch button{border:1px solid #5279b6;border-radius:12px;background:#1b2b54;color:white;font-size:22px;font-weight:900;height:52px;touch-action:none;user-select:none;cursor:pointer}.touch .attack{width:80px;height:80px;border-radius:50%;background:#7d2d72;border-color:#f16ad5}.touch .dash{width:66px;height:66px;border-radius:50%;background:#195f87;border-color:#67dfff}.actions{display:flex;gap:9px;align-items:center}footer{color:#7f91bd;font-size:12px;margin:8px 0;text-align:center}@media(min-width:800px){.touch{opacity:.75}}@media(max-width:550px){body{padding:9px}.dpad{grid-template-columns:repeat(3,48px)}.touch button{height:46px}.touch .attack{width:66px;height:66px}.touch .dash{width:60px;height:60px}.chip{font-size:12px;padding:7px 9px}}
+</style></head><body><div class="shell"><header><div><h1>💎 THE LOST CRYSTAL <span>✦</span></h1><div class="subtitle">NEON WILDS // A tiny action-adventure</div></div><button id="sound" class="btn" aria-label="Toggle sound">🔇 Sound off</button></header><div class="hud"><div class="chip" id="hp">❤️❤️❤️❤️❤️</div><div class="chip" id="gems">💎 0 / 7</div><div class="chip" id="kills">⚔️ 0 defeated</div><div class="chip" id="dashStatus">⚡ DASH READY</div><div class="chip" id="message">Find the lost crystals</div></div><div class="stage"><canvas id="game" width="960" height="540" aria-label="Top-down action adventure game"></canvas><div class="overlay" id="overlay"><div class="panel"><div class="tag" id="overTag">⚡ YOUR QUEST BEGINS ⚡</div><h2 id="overTitle">NEON WILDS</h2><p id="overText">Collect all 7 glowing crystals. Slash through shadow creatures, dash past danger, defeat the guardian, and enter the portal.<br><br><b>Move:</b> WASD / arrows &nbsp; <b>Slash:</b> Space / J &nbsp; <b>Dash:</b> Shift / K</p><button class="btn" id="start">▶ START ADVENTURE</button></div></div></div><div class="bar"><span class="hint">Move: WASD / arrows · Attack: Space / J · Dash: Shift / K · Pause: P</span><button class="btn" id="restart">↻ Restart</button></div><div class="touch"><div class="dpad"><span></span><button data-key="up">▲</button><span></span><button data-key="left">◀</button><button data-key="down">▼</button><button data-key="right">▶</button></div><div class="actions"><button class="dash" data-key="dash">⚡<small style="display:block;font-size:10px">DASH</small></button><button class="attack" data-key="attack">⚔️<small style="display:block;font-size:10px">SLASH</small></button></div></div><footer>Made with HTML Canvas + JavaScript · No libraries · GitHub + Netlify ready</footer></div><script>
+'use strict';
+const canvas=document.querySelector('#game'),c=canvas.getContext('2d'),W=960,H=540,TAU=Math.PI*2;
+const $=s=>document.querySelector(s),keys=new Set();let state='menu',hero,enemies,gems,particles=[],trails=[],clock=0,last=0,shake=0,portal,trees=[],flowers=[],bossSpawned=false,kills=0,audio=null,soundOn=false,uid=0;
+const rand=(a,b)=>a+Math.random()*(b-a),clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),distance=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+function beep(freq=400,dur=.09,type='sine',volume=.06){if(!soundOn)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.setValueAtTime(freq,audio.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(80,freq*.55),audio.currentTime+dur);g.gain.setValueAtTime(volume,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.connect(g).connect(audio.destination);o.start();o.stop(audio.currentTime+dur)}catch(e){}}
+function burst(x,y,color,n=18,power=140){for(let i=0;i<n;i++){const a=rand(0,TAU),s=rand(power*.2,power);particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:rand(.25,.85),max:1,r:rand(1.5,5),color})}if(particles.length>420)particles.splice(0,particles.length-420)}
+function initWorld(){trees=[];flowers=[];for(let i=0;i<58;i++){let x=rand(32,W-32),y=rand(35,H-35);if(Math.hypot(x-95,y-270)<90||Math.hypot(x-855,y-270)<95)continue;trees.push({x,y,r:rand(13,24),seed:rand(0,9)})}for(let i=0;i<150;i++)flowers.push({x:rand(0,W),y:rand(0,H),h:rand(0,TAU),r:rand(1,3)})}
+function startGame(){clock=0;kills=0;shake=0;uid=0;bossSpawned=false;particles=[];trails=[];keys.clear();hero={x:90,y:270,r:16,hp:5,maxHp:5,speed:230,dir:0,attack:0,attackCd:0,dash:0,dashCd:0,inv:0,step:0,dx:1,dy:0};gems=[[175,110],[335,420],[480,95],[615,445],[775,120],[730,310],[410,270]].map(([x,y])=>({x,y,got:false}));portal={x:858,y:270};enemies=[];[[290,185],[490,360],[640,180],[770,420],[350,325]].forEach(([x,y],i)=>spawnEnemy(x,y,i%2?'hunter':'slime'));initWorld();state='play';$('#overlay').classList.add('hidden');updateHUD()}
+function spawnEnemy(x,y,type='slime'){enemies.push({id:uid++,x,y,r:type==='boss'?35:17,type,hp:type==='boss'?18:type==='hunter'?3:2,maxHp:type==='boss'?18:type==='hunter'?3:2,speed:type==='boss'?95:type==='hunter'?105:72,hit:0,phase:rand(0,TAU),vx:0,vy:0,attackCd:0})}
+function updateHUD(){if(!hero)return;$('#hp').textContent='❤️'.repeat(Math.max(0,hero.hp))+'🖤'.repeat(hero.maxHp-hero.hp);let count=gems.filter(g=>g.got).length;$('#gems').textContent=`💎 ${count} / 7`;$('#kills').textContent=`⚔️ ${kills} defeated`;$('#dashStatus').textContent=hero.dashCd>0?`⚡ ${hero.dashCd.toFixed(1)}s`:'⚡ DASH READY';$('#message').textContent=bossSpawned&&enemies.some(e=>e.type==='boss')?'☠️ DEFEAT THE GUARDIAN':count===7?'✨ ENTER THE PORTAL':'Find the lost crystals'}
+function endGame(win){state=win?'won':'dead';$('#overTag').textContent=win?'✦ QUEST COMPLETE ✦':'☠️ THE SHADOWS WON';$('#overTitle').textContent=win?'YOU SAVED THE WILDS!':'GAME OVER';$('#overText').innerHTML=win?`You collected every crystal and defeated the guardian.<br><br>⚔️ ${kills} enemies defeated. Legendary!`:'The forest is dangerous. Try slashing enemies and dashing through attacks!';$('#start').textContent=win?'▶ PLAY AGAIN':'↻ TRY AGAIN';$('#overlay').classList.remove('hidden');beep(win?850:180,.5,'sawtooth',.09)}
+function attack(){if(state!=='play'||hero.attackCd>0)return;hero.attack=.22;hero.attackCd=.34;shake=Math.max(shake,3);beep(490,.11,'sawtooth');for(const e of enemies){let dx=e.x-hero.x,dy=e.y-hero.y,dist=Math.hypot(dx,dy),dot=(dx*hero.dx+dy*hero.dy)/(dist||1);if(dist<hero.r+e.r+75&&dot>-.18){e.hp--;e.hit=.2;e.x+=hero.dx*22;e.y+=hero.dy*22;burst(e.x,e.y,e.type==='boss'?'#ffb650':'#ff5eaf',12);shake=Math.max(shake,7);beep(180,.09,'square',.04)}}}
+function dash(){if(state!=='play'||hero.dashCd>0)return;hero.dash=.19;hero.dashCd=1.6;hero.inv=Math.max(hero.inv,.24);burst(hero.x,hero.y,'#69eaff',16);beep(700,.15,'triangle')}
+function update(dt){clock+=dt;for(const p of particles){p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.pow(.975,dt*60);p.vy*=Math.pow(.975,dt*60);p.life-=dt}particles=particles.filter(p=>p.life>0);shake=Math.max(0,shake-dt*22);if(state!=='play')return;
+hero.inv=Math.max(0,hero.inv-dt);hero.attack=Math.max(0,hero.attack-dt);hero.attackCd=Math.max(0,hero.attackCd-dt);hero.dash=Math.max(0,hero.dash-dt);hero.dashCd=Math.max(0,hero.dashCd-dt);
+let dx=Number(keys.has('right'))-Number(keys.has('left')),dy=Number(keys.has('down'))-Number(keys.has('up')),l=Math.hypot(dx,dy);if(l){dx/=l;dy/=l;hero.dx=dx;hero.dy=dy;hero.dir=Math.atan2(dy,dx);hero.step+=dt*13}let speed=hero.speed*(hero.dash>0?3.3:1);hero.x=clamp(hero.x+dx*speed*dt,23,W-23);hero.y=clamp(hero.y+dy*speed*dt,25,H-25);if(hero.dash>0){trails.push({x:hero.x,y:hero.y,life:.22});if(Math.random()<.7)burst(hero.x,hero.y,'#47dbff',2,65)}for(const t of trees){let d=distance(hero,t),min=hero.r+t.r*.57;if(d<min&&d>0){hero.x+=(hero.x-t.x)/d*(min-d);hero.y+=(hero.y-t.y)/d*(min-d)}}
+for(const g of gems)if(!g.got&&distance(hero,g)<32){g.got=true;burst(g.x,g.y,'#6cffff',32,220);beep(950,.23,'sine');shake=8}
+if(gems.every(g=>g.got)&&!bossSpawned){bossSpawned=true;spawnEnemy(780,260,'boss');burst(780,260,'#ff4a8d',65,260);shake=16;beep(140,.5,'sawtooth',.12)}
+for(const e of enemies){e.phase+=dt*4;e.hit=Math.max(0,e.hit-dt);e.attackCd=Math.max(0,e.attackCd-dt);let d=distance(e,hero),ex=(hero.x-e.x)/(d||1),ey=(hero.y-e.y)/(d||1);if(d<420){let mult=e.type==='boss'?(Math.sin(clock*3)>0?1.5:.6):1;e.x+=ex*e.speed*mult*dt;e.y+=ey*e.speed*mult*dt}else{e.x+=Math.sin(clock*.8+e.id)*e.speed*.23*dt;e.y+=Math.cos(clock*.7+e.id)*e.speed*.23*dt}e.x=clamp(e.x,25,W-25);e.y=clamp(e.y,25,H-25);if(d<hero.r+e.r+3&&hero.inv<=0&&e.attackCd<=0){hero.hp--;hero.inv=1;shake=17;e.attackCd=.7;burst(hero.x,hero.y,'#ff5a73',24);beep(130,.22,'square',.1);hero.x=clamp(hero.x+ex* -30,25,W-25);hero.y=clamp(hero.y+ey* -30,25,H-25);if(hero.hp<=0){endGame(false);break}}}
+for(let i=enemies.length-1;i>=0;i--)if(enemies[i].hp<=0){let e=enemies[i];burst(e.x,e.y,e.type==='boss'?'#ffdc65':'#fd70ca',e.type==='boss'?90:27,240);kills++;shake=e.type==='boss'?22:9;beep(600,.22,'triangle');enemies.splice(i,1)}
+if(bossSpawned&&!enemies.some(e=>e.type==='boss')&&distance(hero,portal)<54){burst(portal.x,portal.y,'#ffeb9d',80,290);endGame(true)}trails=trails.filter(t=>(t.life-=dt)>0);updateHUD()}
+function circle(x,y,r,color){c.fillStyle=color;c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}function ellipse(x,y,rx,ry,color){c.fillStyle=color;c.beginPath();c.ellipse(x,y,rx,ry,0,0,TAU);c.fill()}function line(x,y,x2,y2,color,w=2){c.strokeStyle=color;c.lineWidth=w;c.lineCap='round';c.beginPath();c.moveTo(x,y);c.lineTo(x2,y2);c.stroke()}function glow(x,y,r,color){let g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,color);g.addColorStop(1,'transparent');c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2)}
+function drawWorld(){c.fillStyle='#10283b';c.fillRect(0,0,W,H);for(let y=0;y<H;y+=48)for(let x=0;x<W;x+=48){c.fillStyle=(x/48+y/48)%2===0?'#173849':'#153244';c.fillRect(x,y,48,48)}for(const f of flowers){let sway=Math.sin(clock*2+f.h)*2;line(f.x,f.y,f.x+sway,f.y-7,'#316b67',1.5);circle(f.x+sway,f.y-8,f.r,Math.sin(f.h)>0?'#ff79c4':'#7dc9ee')}for(let i=0;i<18;i++){let x=i*57,y=270+Math.sin(i*.8)*36;ellipse(x,y,22,10,'#2b4658');ellipse(x,y-2,19,7,'#405d69')}for(let i=0;i<trees.length;i++){let t=trees[i],s=Math.sin(clock*1.4+t.seed)*2;ellipse(t.x,t.y+14,t.r*1.25,8,'#071c2a99');circle(t.x,t.y,t.r*.7,'#473b50');circle(t.x+s,t.y-14,t.r,'#155b65');circle(t.x-9+s,t.y-19,t.r*.72,'#1b8180');circle(t.x+8+s,t.y-25,t.r*.75,'#209989');circle(t.x-5+s,t.y-31,t.r*.27,'#5edbc3');if(i%3===0)circle(t.x+7,t.y-13,3,'#e9a6ff')}}
+function drawPortal(){let ready=bossSpawned&&!enemies.some(e=>e.type==='boss'),x=portal.x,y=portal.y;c.save();c.translate(x,y);glow(0,0,92,ready?'#ffe58680':'#5883ff55');for(let i=0;i<4;i++){c.beginPath();c.arc(0,0,30+i*8,clock*(ready?1.3:.3)+i,clock*(ready?1.3:.3)+i+Math.PI*1.3);c.strokeStyle=ready?['#fff3a0','#ffd061','#ffffff','#f4a04b'][i]:['#66c6ff','#756cff','#3d8de3','#9ab4f9'][i];c.lineWidth=4;c.stroke()}circle(0,0,25,ready?'#ffe7a7':'#243b6a');circle(0,0,15,ready?'#fffdf1':'#5470a8');for(let i=0;i<9;i++){let a=clock*(ready?2:1)+i*TAU/9;circle(Math.cos(a)*56,Math.sin(a)*56,ready?3:2,ready?'#fff6c5':'#a7c6ff')}c.restore()}
+function drawGem(g,i){if(g.got)return;let y=g.y+Math.sin(clock*3+i)*7;glow(g.x,y,43,'#46e7ff77');ellipse(g.x,g.y+17,15,5,'#061b2b99');c.save();c.translate(g.x,y);c.rotate(Math.sin(clock*2+i)*.14);c.fillStyle='#2dc4ff';c.beginPath();c.moveTo(0,-19);c.lineTo(13,0);c.lineTo(0,19);c.lineTo(-13,0);c.closePath();c.fill();c.fillStyle='#c4ffff';c.beginPath();c.moveTo(0,-16);c.lineTo(0,13);c.lineTo(-10,0);c.closePath();c.fill();c.restore();for(let j=0;j<3;j++){let a=clock*2+j*TAU/3+i;circle(g.x+Math.cos(a)*25,y+Math.sin(a)*22,2,'#f1ffff')}}
+function drawEnemy(e){let x=e.x,y=e.y+Math.sin(e.phase)*3,boss=e.type==='boss',r=e.r;ellipse(x,e.y+r*.9,r*1.15,7,'#03101a88');glow(x,y,r*2.8,boss?'#ff315b55':'#ff49c344');circle(x,y,r,e.hit>0?'#ffffff':boss?'#8a214e':e.type==='hunter'?'#8d367b':'#643fa4');circle(x-r*.45,y-r*.4,r*.55,boss?'#e74e68':'#bd66dd');circle(x+r*.4,y-r*.5,r*.55,boss?'#b92952':'#a85ad0');for(const side of [-1,1]){circle(x+side*r*.37,y-3,r*.22,'#fff2c8');circle(x+side*r*.37+Math.sin(clock*2)*2,y-3,r*.1,'#24142b')}line(x-r*.25,y+r*.38,x+r*.25,y+r*.38,'#34152d',3);if(boss){for(let i=0;i<6;i++){let a=i*TAU/6+clock*.4;line(x+Math.cos(a)*r*.7,y+Math.sin(a)*r*.7,x+Math.cos(a)*r*1.45,y+Math.sin(a)*r*1.45,'#ff7e74',7)}c.fillStyle='#2a172d';c.fillRect(x-45,y-58,90,8);c.fillStyle='#ff4f75';c.fillRect(x-44,y-57,88*e.hp/e.maxHp,6)}}
+function drawHero(x=hero.x,y=hero.y,ghost=false){let bob=Math.sin(hero.step)*2,walk=Math.sin(hero.step)*5;c.save();c.globalAlpha=ghost?.25:(hero.inv>0&&Math.floor(clock*16)%2===0?.5:1);ellipse(x,y+19,19,7,'#02101a99');glow(x,y-12,42,'#51baff33');line(x-7,y+5,x-7+walk,y+19,'#1c234e',9);line(x+7,y+5,x+7-walk,y+19,'#1c234e',9);line(x-14,y-3,x-17-walk*.4,y+10,'#e7a77c',7);line(x+14,y-3,x+17+walk*.4,y+10,'#e7a77c',7);c.fillStyle='#297cb2';c.fillRect(x-12,y-10+bob,24,24);c.fillStyle='#fbd777';c.fillRect(x-12,y+8+bob,24,5);circle(x,y-19+bob,13,'#edb88e');c.fillStyle='#27334d';c.fillRect(x-13,y-31+bob,26,9);circle(x-7,y-20+bob,2,'#242336');circle(x+7,y-20+bob,2,'#242336');circle(x,y-31+bob,4,'#fff09d');if(hero.attack>0&&!ghost){let a=hero.dir,progress=1-hero.attack/.22;c.strokeStyle='#e5fcff';c.lineWidth=12;c.lineCap='round';c.shadowColor='#61edff';c.shadowBlur=26;c.beginPath();c.arc(x,y,57,a-1.35+progress*.9,a+.5+progress*.9);c.stroke();c.shadowBlur=0;for(let j=0;j<5;j++){let q=a-1.3+progress*.9+j*.38;circle(x+Math.cos(q)*57,y+Math.sin(q)*57,2.5,'#fff')}}c.restore()}
+function draw(){c.save();if(shake>0)c.translate(rand(-shake,shake),rand(-shake,shake));drawWorld();drawPortal();gems.forEach(drawGem);for(const t of trails)drawHero(t.x,t.y,true);enemies.sort((a,b)=>a.y-b.y).forEach(drawEnemy);if(hero)drawHero();c.save();c.globalCompositeOperation='lighter';for(const p of particles){c.globalAlpha=clamp(p.life*1.6,0,1);circle(p.x,p.y,p.r,p.color)}c.restore();if(hero){let vignette=c.createRadialGradient(hero.x,hero.y,180,hero.x,hero.y,750);vignette.addColorStop(0,'#00000000');vignette.addColorStop(1,'#02071599');c.fillStyle=vignette;c.fillRect(0,0,W,H)}c.restore();if(state==='play'&&bossSpawned&&enemies.some(e=>e.type==='boss')){c.textAlign='center';c.font='bold 20px system-ui';c.fillStyle='#ffb4c7';c.fillText('☠ SHADOW GUARDIAN AWAKENED ☠',W/2,36)}}
+function frame(t){let dt=Math.min((t-last)/1000||0,.033);last=t;update(dt);draw();requestAnimationFrame(frame)}
+const mapping={arrowup:'up',w:'up',arrowdown:'down',s:'down',arrowleft:'left',a:'left',arrowright:'right',d:'right',' ':'attack',j:'attack',shift:'dash',k:'dash'};
+window.addEventListener('keydown',e=>{let k=e.key.toLowerCase();if(mapping[k]){e.preventDefault();if(!e.repeat){if(mapping[k]==='attack')attack();if(mapping[k]==='dash')dash()}keys.add(mapping[k])}if(k==='p'&&!e.repeat){if(state==='play'){state='paused';$('#overTag').textContent='⏸ PAUSED';$('#overTitle').textContent='TAKE A BREATHER';$('#overText').textContent='Your adventure is waiting.';$('#start').textContent='▶ RESUME';$('#overlay').classList.remove('hidden')}else if(state==='paused')resume()}});
+window.addEventListener('keyup',e=>{let k=e.key.toLowerCase();if(mapping[k])keys.delete(mapping[k])});window.addEventListener('blur',()=>keys.clear());function resume(){state='play';$('#overlay').classList.add('hidden')}
+for(const b of document.querySelectorAll('[data-key]')){const key=b.dataset.key;b.addEventListener('pointerdown',e=>{e.preventDefault();b.setPointerCapture(e.pointerId);keys.add(key);if(key==='attack')attack();if(key==='dash')dash()});for(const type of ['pointerup','pointercancel','lostpointercapture'])b.addEventListener(type,()=>keys.delete(key))}
+$('#start').addEventListener('click',()=>state==='paused'?resume():startGame());$('#restart').addEventListener('click',startGame);$('#sound').addEventListener('click',()=>{soundOn=!soundOn;$('#sound').textContent=soundOn?'🔊 Sound on':'🔇 Sound off';if(soundOn)beep(720,.1)});initWorld();hero={x:90,y:270,step:0,inv:0,attack:0,dir:0};gems=[];enemies=[];requestAnimationFrame(frame);
 </script></body></html>

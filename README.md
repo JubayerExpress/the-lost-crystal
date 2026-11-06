@@ -1,33 +1,27 @@
-# The Lost Crystal 🎮
+# The Lost Crystal: NEON WILDS 💎
 
-A small animated fantasy adventure game that runs in a browser. Built with plain HTML, CSS and JavaScript; no installation or build step needed.
+A fast-paced, neon-styled browser adventure built with plain HTML, CSS and JavaScript. No dependencies or build tools.
 
-## Play locally
+## Play
 
-Open `index.html` in a modern web browser.
+Open `index.html` in your browser. Collect all seven crystals, fight the Shadow Guardian, and reach the portal.
 
-## Controls
+- Move: WASD or arrow keys (on-screen directional controls on touch devices)
+- Attack: Space / J (or the slash button)
+- Dash: Shift / K (or the dash button)
+- Pause: P
+- Restart: Restart button
+- Sound: Optional sound toggle (off by default)
 
-- Arrow keys or WASD: move
-- On-screen directional buttons: move on touch devices
-- R: restart
+## Deploy on Netlify using GitHub
 
-Collect five crystals, avoid the monsters, and reach the portal.
+1. Create a GitHub repository and upload **the files inside this folder** to the repository root.
+2. In Netlify, select **Add new project → Import an existing project** and connect GitHub.
+3. Choose the repository, leave **Build command** blank, set **Publish directory** to `.` and deploy.
+4. Future commits to your connected branch automatically redeploy.
 
-## Deploy with GitHub + Netlify
+You can also drag this folder into Netlify's manual deployment interface.
 
-1. Create a new repository on [GitHub](https://github.com/new), e.g. `the-lost-crystal`.
-2. Upload `index.html`, `netlify.toml`, `README.md`, and `.gitignore` to the **root** of the repository. Commit the files.
-3. Sign in to [Netlify](https://app.netlify.com/).
-4. Choose **Add new project** > **Import an existing project**, connect GitHub, and select your repository.
-5. Set the **publish directory** to `.` (the repository root). Leave the build command empty. Deploy.
-6. Netlify will give you a public `.netlify.app` URL. Future commits to the connected branch will trigger new deployments.
+## Edit
 
-You can also deploy without GitHub by dragging the project folder into Netlify's manual deploy interface, but that won't automatically redeploy when you push GitHub changes.
-
-## Project files
-
-- `index.html` — all game logic, drawing, styles, and controls
-- `netlify.toml` — static site deployment configuration
-- `README.md` — instructions
-- `.gitignore` — local files to exclude from version control
+Everything lives in `index.html`. Edit CSS in `<style>` to change appearance and JavaScript in `<script>` to change gameplay. The game uses Canvas 2D, Web Audio (only when enabled), and no external assets.
