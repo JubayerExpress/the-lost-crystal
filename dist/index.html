@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f1a2a">
+<title>Pen Clash Arena — the classroom pen fight, rebuilt</title>
+<meta name="description" content="Flick your pen, curve your shots, and be the last pen on the table. A physics pen-fight game from Bangladesh.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800;900&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-screen="home">
+
+<header class="bar" id="bar">
+  <button class="icon-btn back" id="backBtn" aria-label="Back to home" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" /></svg>
+  </button>
+  <button class="brand" id="brandBtn" aria-label="Pen Clash Arena home">
+    <span class="brand-mark" aria-hidden="true"><i></i></span>
+    <span class="brand-word">Pen Clash</span>
+  </button>
+  <div class="bar-right">
+    <span class="wallet" title="Coins"><span class="coin" aria-hidden="true"></span><b id="coinCount">0</b></span>
+    <button class="me" id="meBtn" aria-label="Open your profile">
+      <span class="me-level"><span id="levelNum">1</span><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16" class="ring-bg"/><circle cx="18" cy="18" r="16" class="ring-fg" id="xpRing"/></svg></span>
+      <span class="me-avatar" id="meAvatar"></span>
+    </button>
+  </div>
+</header>
+
+<main>
+  <!-- HOME -->
+  <section class="screen home" data-screen="home">
+    <div class="home-rule" aria-hidden="true"></div>
+    <div class="home-stage">
+      <canvas id="demoCanvas" aria-label="A live demo match of pens clashing on a desk"></canvas>
+      <div class="demo-caption" id="demoCaption">Live table</div>
+    </div>
+    <div class="home-copy">
+      <h1 class="title"><span>Pen</span><span>Clash</span><span class="title-sub">Arena</span></h1>
+      <p class="lede">The desk fight from every Bangladeshi classroom, rebuilt with real physics. Flick your pen, bend your shots, and be the last pen on the table.</p>
+      <div class="home-actions">
+        <button class="cta" id="playBot">
+          <span class="cta-text"><b>Play vs bots</b><small>Solo, first to five points</small></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l8 7-8 7z"/></svg>
+        </button>
+        <button class="cta alt" id="playFriends">
+          <span class="cta-text"><b>Play with friends</b><small>2–5 players on one device</small></span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l8 7-8 7z"/></svg>
+        </button>
+      </div>
+      <nav class="home-links" aria-label="More">
+        <button data-go="arsenal"><span class="hl-ico pen-ico" aria-hidden="true"></span>Arsenal</button>
+        <button data-go="profile"><span class="hl-ico trophy-ico" aria-hidden="true"></span>Profile</button>
+        <button data-go="settings"><span class="hl-ico gear-ico" aria-hidden="true"></span>Settings</button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- SETUP -->
+  <section class="screen setup" data-screen="setup" hidden>
+    <div class="page">
+      <h2 class="page-title" id="setupTitle">Play vs bots</h2>
+      <p class="page-lede" id="setupLede">Knock every bot off the table. Last pen standing scores a point.</p>
+
+      <div class="form">
+        <div class="field">
+          <span class="field-label">Players at the table</span>
+          <div class="seg" id="countSeg" role="radiogroup" aria-label="Number of players"></div>
+        </div>
+        <div class="field" id="diffField">
+          <span class="field-label">Bot skill</span>
+          <div class="seg" id="diffSeg" role="radiogroup" aria-label="Bot skill"></div>
+        </div>
+        <div class="field">
+          <span class="field-label">Table shape</span>
+          <div class="shape-row" id="setupShapes"></div>
+        </div>
+        <div class="field" id="seatsField">
+          <span class="field-label" id="seatsLabel">Your pen</span>
+          <div class="seats" id="seats"></div>
+        </div>
+      </div>
+      <button class="cta wide" id="startMatch"><span class="cta-text"><b>Start match</b><small id="startSub">First to five points</small></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l8 7-8 7z"/></svg></button>
+    </div>
+  </section>
+
+  <!-- PLAY -->
+  <section class="screen play" data-screen="play" hidden>
+    <div class="hud-top">
+      <button class="icon-btn" id="pauseBtn" aria-label="Pause match">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14"/></svg>
+      </button>
+      <div class="scores" id="scores"></div>
+      <div class="round-tag" id="roundTag">Round 1</div>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="gameCanvas" aria-label="Pen Clash table. Drag back and release to flick your pen."></canvas>
+      <div class="callout" id="callout" aria-live="polite"></div>
+    </div>
+    <div class="hud-bottom">
+      <div class="turn" id="turnBox"><span class="turn-dot" id="turnDot"></span><span id="turnText">Your turn</span></div>
+      <div class="shots" id="shots" role="radiogroup" aria-label="Shot type">
+        <button data-shot="-1" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 20C16 12 13 6 6 5M6 5l4-2M6 5l2 4"/></svg><span>Curve left</span></button>
+        <button data-shot="0" role="radio" aria-checked="true" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20V4M12 4l-4 4M12 4l4 4"/></svg><span>Straight</span></button>
+        <button data-shot="1" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 20C8 12 11 6 18 5M18 5l-4-2M18 5l-2 4"/></svg><span>Curve right</span></button>
+      </div>
+    </div>
+
+    <div class="overlay" id="pauseOverlay" hidden>
+      <div class="sheet">
+        <h3>Paused</h3>
+        <button class="cta" id="resumeBtn"><span class="cta-text"><b>Resume</b></span></button>
+        <button class="ghost" id="restartBtn">Restart match</button>
+        <button class="ghost" id="soundQuick">Sound: on</button>
+        <button class="ghost danger" id="quitBtn">Quit to menu</button>
+      </div>
+    </div>
+
+    <div class="overlay" id="resultOverlay" hidden>
+      <div class="sheet result">
+        <div class="result-crest" id="resultCrest"></div>
+        <h3 id="resultTitle">You win</h3>
+        <p id="resultSub" class="muted"></p>
+        <ol class="standings" id="standings"></ol>
+        <div class="rewards" id="rewards"></div>
+        <div class="sheet-actions">
+          <button class="cta" id="rematchBtn"><span class="cta-text"><b>Rematch</b></span></button>
+          <button class="ghost" id="menuBtn">Menu</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARSENAL -->
+  <section class="screen arsenal" data-screen="arsenal" hidden>
+    <div class="page wide">
+      <div class="page-head">
+        <h2 class="page-title">Arsenal</h2>
+        <div class="tabs" role="tablist">
+          <button role="tab" aria-selected="true" data-tab="pens" class="on">Pens</button>
+          <button role="tab" aria-selected="false" data-tab="tables">Tables</button>
+        </div>
+      </div>
+      <div class="tab-panel" data-panel="pens">
+        <p class="page-lede">Every pen trades something. Heavy pens shrug off hits but slide less; light pens glide further and get knocked around.</p>
+        <div class="pen-grid" id="penGrid"></div>
+      </div>
+      <div class="tab-panel" data-panel="tables" hidden>
+        <p class="page-lede">The shape sets the knockout edge. The finish is just for looks.</p>
+        <h3 class="sub-title">Shape</h3>
+        <div class="shape-row big" id="arsenalShapes"></div>
+        <h3 class="sub-title">Finish</h3>
+        <div class="surface-grid" id="surfaceGrid"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROFILE -->
+  <section class="screen profile" data-screen="profile" hidden>
+    <div class="page">
+      <div class="id-card">
+        <div class="id-avatar" id="pAvatar"></div>
+        <div class="id-main">
+          <h2 id="pName">Player One</h2>
+          <div class="id-level"><span id="pLevel">Level 1</span><span class="xp"><i id="pXp"></i></span><span class="muted" id="pXpText">0 / 100 XP</span></div>
+        </div>
+        <button class="ghost small" id="editProfile">Edit</button>
+      </div>
+      <div class="stat-grid" id="statGrid"></div>
+      <p class="note">Your profile, coins and records are saved in this browser. Cloud accounts that follow you across devices aren't built yet.</p>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="screen settings" data-screen="settings" hidden>
+    <div class="page">
+      <h2 class="page-title">Settings</h2>
+      <div class="rows">
+        <label class="row"><span><b>Sound</b><small>Flicks, clashes and celebrations</small></span><input type="checkbox" class="switch" id="sSound"></label>
+        <label class="row"><span><b>Volume</b></span><input type="range" min="0" max="100" id="sVolume"></label>
+        <label class="row"><span><b>Screen shake</b><small>Camera shake on big hits</small></span><input type="checkbox" class="switch" id="sShake"></label>
+        <label class="row"><span><b>Battery saver</b><small>Lower resolution and fewer particles</small></span><input type="checkbox" class="switch" id="sSaver"></label>
+      </div>
+      <h3 class="sub-title">How to play</h3>
+      <ol class="howto">
+        <li>On your turn, press anywhere on the table and drag back like a slingshot. The dotted line shows where your pen will go.</li>
+        <li>Release to flick. The further you pull, the harder the shot.</li>
+        <li>Pick a curve before you shoot to bend around a blocker.</li>
+        <li>A pen is out when its centre leaves the table. Last pen standing scores a point. First to five wins.</li>
+      </ol>
+      <div class="rows">
+        <div class="row"><span><b>Reset progress</b><small>Clears coins, unlocks and records on this device</small></span><button class="ghost small danger" id="resetBtn">Reset</button></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- PROFILE EDITOR -->
+<div class="overlay modal" id="editOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="editTitle">
+  <div class="sheet">
+    <h3 id="editTitle">Edit player</h3>
+    <label class="f-label" for="editSlot">Seat</label>
+    <select id="editSlot"></select>
+    <label class="f-label" for="editName">Name</label>
+    <input id="editName" maxlength="16" autocomplete="off" placeholder="Your name">
+    <span class="f-label">Avatar</span>
+    <div class="avatar-grid" id="avatarGrid"></div>
+    <label class="upload"><input type="file" id="editPhoto" accept="image/*">Use a photo instead</label>
+    <div class="sheet-actions">
+      <button class="cta" id="editSave"><span class="cta-text"><b>Save</b></span></button>
+      <button class="ghost" id="editCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<script src="game.js"></script>
+</body>
+</html>
